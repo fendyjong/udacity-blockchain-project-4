@@ -1,6 +1,6 @@
 # Project #4. Private Blockchain Notary Service
 
-This is Project 4, Private Blockchain Notary Service. This project uses blockchain record a star ownership.
+This is Project 4, Private Blockchain Notary Service. This project uses blockchain to record a star ownership.
  
 ## Technology used.
 
@@ -25,10 +25,6 @@ You may use [Postman](https://www.getpostman.com/) or curl to test the project
 
 ### API Resources
 The following API request and response is in JSON format
-- GET /block/[id]
-- GET /stars/hash:[hash] or /stars/address:[address]
-- POST /block
-- POST /requestValidation
 
 ### GET `/block/[id]` 
 
@@ -59,7 +55,7 @@ Get block in the blockchain using block id
 
 ### GET `/stars/hash:[hash]` or `/stars/address:[address]`
 
-Get block in the blockchain using block hash or wallet address
+Get block in the blockchain using *block hash* or *wallet address*
 
 ##### Response
 

@@ -1,0 +1,25 @@
+{
+  "name": "rest_api_exp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "api/app.js",
+  "scripts": {
+    "start": "node api/v1/app.js",
+    "start-dev": "nodemon api/v1/app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bitcoinjs-lib": "^4.0.3",
+    "bitcoinjs-message": "^2.0.0",
+    "body-parser": "^1.18.3",
+    "crypto-js": "^3.1.9-1",
+    "express": "^4.16.4",
+    "hex2ascii": "^0.0.3",
+    "level": "^4.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^1.18.10"
+  }
+}

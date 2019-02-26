@@ -333,6 +333,7 @@ class Blockchain {
 		}
 		 */
 		if (this.isRequestInMempools(address)) {
+			this.updateRequestValidationWindow(address);
 			const request = this.getRequest(address);
 
 			const verified = bitcoinMessage.verify(request.message, address, signature);

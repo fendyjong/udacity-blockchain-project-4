@@ -154,7 +154,7 @@ class BlockController {
 	}
 
 	/**
-	 * Implement a Post Endpoint to validate requested message in mempools, url: "/validateRequestByWallet"
+	 * Implement a Post Endpoint to validate requested message in mempools, url: "/message-signature/validate"
 	 *
 	 * Example Request JSON:
 	 * {
@@ -163,14 +163,14 @@ class BlockController {
 	 * }
 	 */
 	validateRequestByWallet() {
-		this.app.post(`${this.urlPrefix}/validateRequestByWallet`, (req, res) => {
+		this.app.post(`${this.urlPrefix}/message-signature/validate`, (req, res) => {
 			const { address, signature } = req.body;
 			if (address && signature) {
 				const verifiedRequest = this.myBlockChain.validateRequestByAddressAndSignature(address, signature);
 				if (verifiedRequest) {
 					res.json(verifiedRequest);
 				} else {
-					res.sendStatus(404);
+					res.status(404).send("Invalid Signature");
 				}
 			} else {
 				res.sendStatus(400);

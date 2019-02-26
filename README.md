@@ -136,7 +136,7 @@ Post new request for validation
 - 500 Internal Server Error
 - 400 Bad Request
 
-#### POST `/validateRequestByWallet`
+#### POST `/message-signature/validate`
 
 Validate request by wallet address
 
@@ -162,6 +162,6 @@ Validate request by wallet address
     }
   }
 	```
-- 404 Not Found: Request may be timed out or has not been requested.
+- 404 Not Found: "Invalid Signature".
 - 400 Bad Request
 

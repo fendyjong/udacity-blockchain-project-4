@@ -15,6 +15,7 @@ class Blockchain {
 	constructor() {
 		this.bd = new LevelSandbox.LevelSandbox();
 		this.mempools = [];
+		this.mempoolValids = [];
 		this.timeoutRequests = {};
 
 		// testing: set defaultTimeoutRequest to 3 sec
@@ -57,7 +58,7 @@ class Blockchain {
 			await this.generateGenesisBlock();
 		}
 		// verify request
-		if (this.isRequestVerified(block.body.address)) {
+		if (this.isRequestInMempools(block.body.address, true)) {
 			// Encode star story
 			block.body.star.story = Buffer(block.body.star.story).toString('hex');
 
@@ -78,7 +79,7 @@ class Blockchain {
 
 			if (result) {
 				// remove request from mempools
-				this.removeRequestFromMempools(block.body.address);
+				this.removeRequestFromMempools(block.body.address, true);
 				return result;
 			}
 		}
@@ -191,21 +192,6 @@ class Blockchain {
 		return await Promise.all(promises).then(() => errorLog);
 	}
 
-	/**
-	 * Is address valid?
-	 *
-	 * @param address
-	 */
-	isAddressValid(address) {
-		try {
-			bitcoin.address.toOutputScript(address);
-			return true;
-		} catch (e) {
-			console.error(e);
-			return false;
-		}
-	}
-
 	requestValidation(address) {
 		if (this.isAddressValid(address)) {
 			if (!this.isRequestInMempools(address)) {
@@ -235,23 +221,70 @@ class Blockchain {
 	}
 
 	/**
-	 * Validate if the request still exist in mempools.
+	 * Validate request in mempools by address and signature
 	 *
 	 * @param address
-	 * @returns {boolean}
+	 * @param signature
 	 */
-	isRequestInMempools(address) {
-		return this.mempools.filter(mempool => mempool.walletAddress === address).length > 0;
+	validateRequestByAddressAndSignature(address, signature) {
+		if (this.isRequestInMempools(address)) {
+			this.updateRequestValidationWindow(address);
+			const request = this.getRequest(address);
+
+			const verified = bitcoinMessage.verify(request.message, address, signature);
+			if (verified) {
+				this.removeTimeoutRequest(address);
+				request.registerStar = true;
+				this.removeRequestFromMempools(request);
+
+				const validRequest = {
+					registerStar: true,
+					status: {
+						address: request.walletAddress,
+						requestTimeStamp: request.requestTimeStamp,
+						message: request.message,
+						validationWindow: request.validationWindow,
+						messageSignature: true,
+					},
+				};
+
+				// Add valid request to mempoolValids
+				this.updateRequestInMempools(validRequest, true);
+
+				return validRequest;
+			}
+		}
+		return undefined;
 	}
 
 	/**
-	 * Check if request has been verified
+	 * Is address valid?
 	 *
 	 * @param address
+	 */
+	isAddressValid(address) {
+		try {
+			bitcoin.address.toOutputScript(address);
+			return true;
+		} catch (e) {
+			console.error(e);
+			return false;
+		}
+	}
+
+	/**
+	 * Validate if the request still exist in mempools.
+	 *
+	 * @param address
+	 * @param valid
 	 * @returns {boolean}
 	 */
-	isRequestVerified(address) {
-		return this.mempools.filter(mempool => mempool.walletAddress === address && mempool.registerStar).length > 0;
+	isRequestInMempools(address, valid = false) {
+		if (valid) {
+			return this.mempoolValids.filter(mempool => mempool.status.address === address).length > 0;
+		} else {
+			return this.mempools.filter(mempool => mempool.walletAddress === address).length > 0;
+		}
 	}
 
 	/**
@@ -277,18 +310,28 @@ class Blockchain {
 	/**
 	 * Add or update request in mempools.
 	 * @param request
+	 * @param valid
 	 */
-	updateRequestInMempools(request) {
-		this.removeRequestFromMempools(request.walletAddress);
-		this.mempools.push(request);
+	updateRequestInMempools(request, valid = false) {
+		this.removeRequestFromMempools(request.status.address, valid);
+		if (valid) {
+			this.mempoolValids.push(request);
+		} else {
+			this.mempools.push(request);
+		}
 	}
 
 	/**
 	 * Remove request from mempools.
 	 * @param address
+	 * @param valid
 	 */
-	removeRequestFromMempools(address) {
-		this.mempools = this.mempools.filter(mempool => !mempool.walletAddress === address);
+	removeRequestFromMempools(address, valid = false) {
+		if (valid) {
+			this.mempoolValids = this.mempoolValids.filter(mempool => !mempool.status.address === address);
+		} else {
+			this.mempools = this.mempools.filter(mempool => !mempool.walletAddress === address);
+		}
 	}
 
 	/**
@@ -311,49 +354,6 @@ class Blockchain {
 	 */
 	getRequest(address) {
 		return this.mempools.filter(mempool => mempool.walletAddress === address)[0];
-	}
-
-	/**
-	 * Validate request in mempools by address and signature
-	 *
-	 * @param address
-	 * @param signature
-	 */
-	validateRequestByAddressAndSignature(address, signature) {
-		/*
-		{
-			"registerStar": true,
-			"status": {
-					"address": "19xaiMqayaNrn3x7AjV5cU4Mk5f5prRVpL",
-					"requestTimeStamp": "1544454641",
-					"message": "19xaiMqayaNrn3x7AjV5cU4Mk5f5prRVpL:1544454641:starRegistry",
-					"validationWindow": 193,
-					"messageSignature": true
-			}
-		}
-		 */
-		if (this.isRequestInMempools(address)) {
-			this.updateRequestValidationWindow(address);
-			const request = this.getRequest(address);
-
-			const verified = bitcoinMessage.verify(request.message, address, signature);
-			if (verified) {
-				this.removeTimeoutRequest(address);
-				request.registerStar = true;
-				this.updateRequestInMempools(request);
-				return {
-					registerStar: true,
-					status: {
-						address: request.walletAddress,
-						requestTimeStamp: request.requestTimeStamp,
-						message: request.message,
-						validationWindow: request.validationWindow,
-						messageSignature: true,
-					},
-				};
-			}
-		}
-		return undefined;
 	}
 
 }

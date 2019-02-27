@@ -313,10 +313,11 @@ class Blockchain {
 	 * @param valid
 	 */
 	updateRequestInMempools(request, valid = false) {
-		this.removeRequestFromMempools(request.status.address, valid);
 		if (valid) {
+			this.removeRequestFromMempools(request.status.address, valid);
 			this.mempoolValids.push(request);
 		} else {
+			this.removeRequestFromMempools(request.walletAddress, valid);
 			this.mempools.push(request);
 		}
 	}
